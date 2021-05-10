@@ -1,61 +1,71 @@
 import socket
 import threading
 
-# Connection Data
+# infos para conexão
 host = '127.0.0.1'
 port = 55555
 
-# Starting Server
+# Iniciando servidor
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
 server.listen()
+print("Servidor Iniciado!")
 
-# Lists For Clients and Their Nicknames
-clients = []
-nicknames = []
+# Listas para clientes (ip e porta) e nomes de usuario
+clientes = []
+usuarios = []
 
-# Sending Messages To All Connected Clients
-def broadcast(message):
-    for client in clients:
-        client.send(message)
+# Mandando mensagem para todos os clientes conectados
+def broadcast(mensagem):
+    for cliente in clientes:
+        cliente.send(mensagem)
 
-# Handling Messages From Clients
-def handle(client):
+# Administranod mensagem dos clientes
+def handle(cliente):
     while True:
         try:
-            # Broadcasting Messages
-            message = client.recv(1024)
-            broadcast(message)
+            # Broadcast de mensagens - envia para todos os clientes
+            mensagem = cliente.recv(1024)
+            broadcast(mensagem)
         except:
-            # Removing And Closing Clients
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            nickname = nicknames[index]
-            broadcast('{} left!'.format(nickname).encode('ascii'))
-            nicknames.remove(nickname)
+            # Removendo e desconectando clientes
+            index = clientes.index(cliente)
+            clientes.remove(cliente)
+            cliente.close()
+            nomeUsuario = usuarios[index]
+            # Manda para os clientes
+            broadcast(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)).encode('ascii'))
+            # Printa no server
+            #print(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)).encode('ascii'))
+            usuarios.remove(nomeUsuario)
+            # Manda para os clientes
+            broadcast(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
+            # Printa no server
+            #print(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
             break
 
-# Receiving / Listening Function
+# Recebendo e administrando mensagens
 def receive():
     while True:
-        # Accept Connection
-        client, address = server.accept()
-        print("Connected with {}".format(str(address)))
+        # Aceitando conexão
+        cliente, address = server.accept()
+        print("Conectado com {}".format(str(address)))
 
-        # Request And Store Nickname
-        client.send('NICK'.encode('ascii'))
-        nickname = client.recv(1024).decode('ascii')
-        nicknames.append(nickname)
-        clients.append(client)
+        # Requisitando e guardando nome de usuario
+        cliente.send('USER'.encode('ascii'))
+        nomeUsuario = cliente.recv(1024).decode('ascii')
+        usuarios.append(nomeUsuario)
+        clientes.append(cliente)
 
-        # Print And Broadcast Nickname
-        print("Nickname is {}".format(nickname))
-        broadcast("{} joined!".format(nickname).encode('ascii'))
-        client.send('Connected to server!'.encode('ascii'))
+        # Printando e enviando nome de usuarios conectados
+        print("Nome de usuario: {}".format(nomeUsuario))
+        broadcast(str("-------------------------------\n" + "{} entrou!".format(nomeUsuario)).encode('ascii'))
+        broadcast(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
+        cliente.send("\nConectado no servidor!".encode('ascii'))
 
-        # Start Handling Thread For Client
-        thread = threading.Thread(target=handle, args=(client,))
+        # Começando thread para clientes
+        thread = threading.Thread(target=handle, args=(cliente,))
         thread.start()
+
 
 receive()
