@@ -1,8 +1,27 @@
 import socket
 import threading
+import sys
 
 # Escolhendo o nome de usuario
-nomeUsuario = input("Nome de usuario: ")
+nomeUsuario = ''
+
+def setNomeUsuario():
+
+    while True:
+        sys.stdout.flush()
+        nome = input("Nome de usuario: ")
+        print("nome escolhido->" + nome)
+
+        cliente.send(nome.encode('ascii'))
+        valid = cliente.recv(1024).decode('ascii')
+
+        print(valid)
+        if valid == 'VALIDO':
+            break
+            
+    global nomeUsuario
+    nomeUsuario = nome
+    print("sai do while: "+ nomeUsuario)
 
 # Conectando no servidor
 cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,7 +35,7 @@ def receive():
             # Se 'USER' mandar nome de usuario
             mensagem = cliente.recv(1024).decode('ascii')
             if mensagem == 'USER':
-                cliente.send(nomeUsuario.encode('ascii'))
+                setNomeUsuario()
             else:
                 print(mensagem)
         except:
@@ -24,9 +43,12 @@ def receive():
             print("Um erro ocorreu")
             cliente.close()
             break
+            raise
+        
 
 # Mandando mensagem para servidor
 def write():
+    sys.stdout.flush()
     while True:
         mensagem = '{}: {}'.format(nomeUsuario, input(''))
         cliente.send(mensagem.encode('ascii'))

@@ -43,6 +43,15 @@ def handle(cliente):
             # Printa no server
             #print(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
             break
+            raise
+
+def verificaNomeUsuario(nomeUsuario, cliente):
+    if nomeUsuario in usuarios:
+        cliente.send('INVALIDO'.encode('ascii'))
+        return False
+    else:
+        cliente.send('VALIDO'.encode('ascii'))
+        return True
 
 # Recebendo e administrando mensagens
 def receive():
@@ -51,9 +60,14 @@ def receive():
         cliente, address = server.accept()
         print("Conectado com {}".format(str(address)))
 
-        # Requisitando e guardando nome de usuario
-        cliente.send('USER'.encode('ascii'))
-        nomeUsuario = cliente.recv(1024).decode('ascii')
+        while True:
+            # Requisitando e guardando nome de usuario
+            cliente.send('USER'.encode('ascii'))
+            nomeUsuario = cliente.recv(1024).decode('ascii')
+
+            if verificaNomeUsuario(nomeUsuario, cliente):
+                break
+
         usuarios.append(nomeUsuario)
         clientes.append(cliente)
 
@@ -66,6 +80,5 @@ def receive():
         # Começando thread para clientes
         thread = threading.Thread(target=handle, args=(cliente,))
         thread.start()
-
 
 receive()
