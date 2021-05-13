@@ -36,12 +36,12 @@ def handle(cliente):
             # Manda para os clientes
             broadcast(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)).encode('ascii'))
             # Printa no server
-            #print(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)).encode('ascii'))
+            print(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)))
             usuarios.remove(nomeUsuario)
             # Manda para os clientes
             broadcast(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
             # Printa no server
-            #print(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
+            print(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------"))
             break
             raise
 
@@ -62,7 +62,7 @@ def receive():
 
         while True:
             # Requisitando e guardando nome de usuario
-            cliente.send('USER'.encode('ascii'))
+            #cliente.send('USER'.encode('ascii'))
             nomeUsuario = cliente.recv(1024).decode('ascii')
 
             if verificaNomeUsuario(nomeUsuario, cliente):
@@ -73,8 +73,11 @@ def receive():
 
         # Printando e enviando nome de usuarios conectados
         print("Nome de usuario: {}".format(nomeUsuario))
-        broadcast(str("-------------------------------\n" + "{} entrou!".format(nomeUsuario)).encode('ascii'))
-        broadcast(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
+
+        #broadcast(str("-------------------------------\n" + "{} entrou!".format(nomeUsuario)).encode('ascii'))
+        broadcast(f"-------------------------------\n{nomeUsuario} entrou! ".encode('ascii'))
+        broadcast(f"Usuarios Online: {' | '.join(usuarios)}\n-------------------------------".encode('ascii'))
+        
         cliente.send("\nConectado no servidor!".encode('ascii'))
 
         # Começando thread para clientes
