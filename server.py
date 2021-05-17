@@ -1,7 +1,7 @@
 import socket
 import threading
 
-# infos para conexão
+# Info para conexão
 host = '127.0.0.1'
 port = 55555
 
@@ -9,79 +9,89 @@ port = 55555
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
 server.listen()
-print("Servidor Iniciado!")
+print("Servidor Iniciado!\n-------------------------------")
 
-# Listas para clientes (ip e porta) e nomes de usuario
-clientes = []
-usuarios = []
+# Lista para guardar as salas e usuarios conectados nelas
+salas = {}
+
+# Ver lista de usuários na sala
+def userList(idSala):
+    if len(salas[idSala]['usuarios']) == 0:
+        return 0
+    else:
+        return (' | '.join(salas[idSala]['usuarios']))
 
 # Mandando mensagem para todos os clientes conectados
-def broadcast(mensagem):
-    for cliente in clientes:
+def broadcast(mensagem, idSala):
+    for cliente in salas[idSala]['clientes']:
         cliente.send(mensagem)
 
-# Administranod mensagem dos clientes
-def handle(cliente):
+# Administrando mensagem dos clientes
+def handle(cliente, idSala):
     while True:
         try:
-            # Broadcast de mensagens - envia para todos os clientes
+            # Broadcast de mensagens: envia para todos os clientes na sala
             mensagem = cliente.recv(1024)
-            broadcast(mensagem)
+            broadcast(mensagem, idSala)
         except:
             # Removendo e desconectando clientes
-            index = clientes.index(cliente)
-            clientes.remove(cliente)
+            index = salas[idSala]['clientes'].index(cliente)
+            salas[idSala]['clientes'].remove(cliente)
+            nomeUsuario = salas[idSala]['usuarios'][index]
+            salas[idSala]['usuarios'].remove(nomeUsuario)
+
+            # Printa no server
+            print(f"Sala: {idSala}\n{nomeUsuario} {cliente.getpeername()} saiu!\nUsuarios Online na Sala: {userList(idSala)}\n-------------------------------")
+
+            #Fecha o socket
             cliente.close()
-            nomeUsuario = usuarios[index]
+
             # Manda para os clientes
-            broadcast(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)).encode('ascii'))
-            # Printa no server
-            print(str("-------------------------------\n" + "{} saiu!".format(nomeUsuario)))
-            usuarios.remove(nomeUsuario)
-            # Manda para os clientes
-            broadcast(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------").encode('ascii'))
-            # Printa no server
-            print(str("Usuarios Online: " + " | ".join(usuarios) + "\n-------------------------------"))
+            broadcast(f"-------------------------------\n{nomeUsuario} saiu!\nUsuarios Online na Sala {idSala}: {userList(idSala)}\n-------------------------------".encode('ascii'), idSala)
             break
             raise
 
-def verificaNomeUsuario(nomeUsuario, cliente):
-    if nomeUsuario in usuarios:
-        cliente.send('INVALIDO'.encode('ascii'))
-        return False
-    else:
-        cliente.send('VALIDO'.encode('ascii'))
-        return True
-
-# Recebendo e administrando mensagens
+# Recebendo conexão do cliente
 def receive():
     while True:
         # Aceitando conexão
         cliente, address = server.accept()
-        print(str("-------------------------------\n" + "Conectado: {}".format(str(address))))
+        print(f"Conectou: {address}")
 
-        while True:
-            # Requisitando e guardando nome de usuario
-            #cliente.send('USER'.encode('ascii'))
+        idSala = str(cliente.recv(1024).decode('ascii'))
+
+        print(f"Sala: {idSala}")
+
+        # Verificando se a sala ja existe
+        if idSala in salas:
+            # Se a sala existe, verificar se o nome de usuario ja esta sendo usado na sala
+            while True:
+                # Requisitando e guardando nome de usuario
+                nomeUsuario = cliente.recv(1024).decode('ascii')
+
+                if nomeUsuario not in salas[idSala]['usuarios']:
+                    cliente.send('VALIDO'.encode('ascii'))
+                    break
+                cliente.send('INVALIDO'.encode('ascii'))
+
+        else:
+            # Se a sala não existia ela é criada, não é preciso verificar o nome de usuario
             nomeUsuario = cliente.recv(1024).decode('ascii')
+            cliente.send('VALIDO'.encode('ascii'))
+            salas[idSala] = {'clientes': [], 'usuarios':[]}
 
-            if verificaNomeUsuario(nomeUsuario, cliente):
-                break
-
-        usuarios.append(nomeUsuario)
-        clientes.append(cliente)
+        salas[idSala]['clientes'].append(cliente)
+        salas[idSala]['usuarios'].append(nomeUsuario)
 
         # Printando e enviando nome de usuarios conectados
-        print(str("Nome de usuario: {}".format(nomeUsuario) + "\n-------------------------------"))
+        print(f"Nome de usuario: {nomeUsuario}\n-------------------------------")
 
-        #broadcast(str("-------------------------------\n" + "{} entrou!".format(nomeUsuario)).encode('ascii'))
-        broadcast(f"-------------------------------\n{nomeUsuario} entrou! ".encode('ascii'))
-        broadcast(f"Usuarios Online: {' | '.join(usuarios)}\n-------------------------------".encode('ascii'))
+        broadcast(f"-------------------------------\n{nomeUsuario} entrou!\nUsuarios Online na Sala {idSala}: {userList(idSala)}\n-------------------------------".encode('ascii'), idSala)
         
         cliente.send("\nConectado no servidor!".encode('ascii'))
 
         # Começando thread para clientes
-        thread = threading.Thread(target=handle, args=(cliente,))
+        thread = threading.Thread(target=handle, args=(cliente, idSala))
         thread.start()
 
 receive()

@@ -5,6 +5,10 @@ import threading
 cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 cliente.connect(('127.0.0.1', 55555))
 
+sala = input("Sala: ")
+
+cliente.send(sala.encode('ascii'))
+
 while True:
     nomeUsuario = input("Nome de usuario: ")
 
@@ -13,8 +17,8 @@ while True:
 
     if valid == 'VALIDO':
         break
+    
     print('Nome de usuário já existe na sala, digite outro')
-
 
 # Escutando servidor e mandando nome de usuario
 def receive():
