@@ -58,7 +58,7 @@ def receive():
     while True:
         # Aceitando conexão
         cliente, address = server.accept()
-        print("Conectado com {}".format(str(address)))
+        print(str("-------------------------------\n" + "Conectado: {}".format(str(address))))
 
         while True:
             # Requisitando e guardando nome de usuario
@@ -72,7 +72,7 @@ def receive():
         clientes.append(cliente)
 
         # Printando e enviando nome de usuarios conectados
-        print("Nome de usuario: {}".format(nomeUsuario))
+        print(str("Nome de usuario: {}".format(nomeUsuario) + "\n-------------------------------"))
 
         #broadcast(str("-------------------------------\n" + "{} entrou!".format(nomeUsuario)).encode('ascii'))
         broadcast(f"-------------------------------\n{nomeUsuario} entrou! ".encode('ascii'))
